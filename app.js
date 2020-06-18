@@ -4,24 +4,19 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var Sequelize = require('sequelize');
 var session = require('express-session');
 var SequelizeStore = require('connect-session-sequelize')(session.Store);
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var loginRouter = require('./routes/login');
+var registerRouter = require('./routes/register');
 
 var app = express();
 
-var sequelize = new Sequelize(
-  'dbname',
-  'username',
-  'password',
-  {
-    dialect: 'postgres',
-    host: 'localhost'
-  }
-)
+var sequelize = require('./util/db');
+
+var User = require('./models/user');
 
 var myStore = new SequelizeStore({
   db: sequelize
@@ -59,6 +54,16 @@ app.use((req, res, next) => {
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/login', loginRouter);
+app.use('/register', registerRouter);
+
+app.use('/protected', (req, res, next) => {
+  if(!req.session.user) {
+    return res.redirect('/');
+  } else {
+    return res.json({message: "OK"});
+  }
+});
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -77,5 +82,6 @@ app.use(function(err, req, res, next) {
 });
 
 myStore.sync();
+User.sync();
 
 module.exports = app;
